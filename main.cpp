@@ -1,6 +1,8 @@
+#include <cstddef>
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream> //Include for file interactions
 using namespace std;
 
 // Represents one task
@@ -18,10 +20,33 @@ public:
     void print(int index) const {
         cout << index << ". [" << (isDone ? "x" : " ") << "] " << description << '\n';
     }
+
+    std::string serialize() const {
+        return (isDone ? "1" : "0") + std::string(";") + description;
+    }
+
+    static Task deserialize(const std::string& line) {
+        size_t sep = line.find(';');
+        bool done = line[0] == '1';
+        std::string desc = line.substr(sep + 1);
+        Task task(desc);
+        task.isDone = done;
+        return task;
+    }
 };
 
 int main() {
     vector<Task> tasks;  // Dynamic list of Task objects
+
+    std::ifstream in("tasks.txt");
+    std::string line;
+    while (std::getline(in, line)) {
+        if(!line.empty()) {
+            tasks.push_back(Task::deserialize(line));
+        }
+    }
+    in.close();
+
     int choice;
 
     while (true) {
@@ -75,7 +100,12 @@ int main() {
                 std::cout << "Invalid Choice!\n";
             }
         } else if (choice == 0) {
-            cout << "Exiting...\n";
+            std::ofstream out("tasks.txt");
+            for (const Task& task : tasks) {
+                out << task.serialize() << '\n';
+            }
+            out.close();
+            cout << "Saved & Exiting...\n";
             break;
 
         } else {
